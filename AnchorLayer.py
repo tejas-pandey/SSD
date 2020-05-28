@@ -62,6 +62,8 @@ def convert_coordinates(tensor, start_index, conversion, border_pixels='half'):
     return tensor1
 
 
+
+
 class AnchorBoxes(Layer):
 
     def __init__(self, img_size, aspect_ratios, this_scale, next_scale, two_boxes_for_ar1, this_steps, this_offsets, variances, clip_boxes, normalize_coords, **kwargs):
@@ -90,7 +92,7 @@ class AnchorBoxes(Layer):
 
         super(AnchorBoxes, self).__init__(**kwargs)
         
- 
+
     def call(self, x):
         input_shape = tf.shape(x)
         feature_width = input_shape[2]

@@ -54,6 +54,27 @@ def convert_coordinates(tensor, start_index, conversion, border_pixels='half'):
 
     return tensor1
 
+
+def intersecion_area(boxes1, boxes2):
+    m = boxes1.shape[0]
+    n = boxes2.shape[0]
+
+    xmin = 0
+    ymin = 1
+    xmax  =2
+    ymax = 3
+
+    min_xy = 
+
+def iou(boxes1, boxes2, coords='centroids', mode='outer_product'):
+
+    if coords == 'centroids':
+        boxes1 = convert_coordinates(boxes1, start_index=0, conversion='centroids2corners')
+        boxes2 = convert_coordinates(boxes2, start_index=0, conversion='centroids2corners')
+        coords = 'corners'
+    
+    
+
 def encode_ssd(gt_labels, *args):
     
     n_classes = args[1]
