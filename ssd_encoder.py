@@ -54,6 +54,73 @@ def convert_coordinates(tensor, start_index, conversion, border_pixels='half'):
 
     return tensor1
 
+
+def intersection_area_(boxes1, boxes2, coords='corners', mode='outer_product', border_pixels='half'):
+    m = boxes1.shape[0]
+    n = boxes2.shape[1]
+
+    xmin = 0
+    ymin = 1
+    xmax = 2
+    ymax = 3
+
+    min_xy = tf.maximum(tf.tile(tf.expand_dims(boxes1[:, [xmin, ymin]], axis=1), (1, n, 1)),
+                tf.tile(tf.expand_dims(boxes2[:, [xmin, ymin]], axis=0), (m, 1, 1)))
+
+    max_xy = tf.minimum(tf.tile(tf.expand_dims(boxes1[:, [xmax, ymax]], axis=1), (1, n, 1)),
+                tf.tile(tf.expand_dims(boxes2[:, [xmax, ymax]], axis=0), (m, 1, 1)))
+
+    side_lengths = tf.maximum(0, max_xy - min_xy)
+
+    return side_lengths[:, :, 0] * side_lengths[:, :, 1]
+
+
+def iou(boxes1, boxes2, coords='centroids', mode='outer_product', border_pixels='half'):
+
+    if coords == 'centroids':
+        boxes1 = convert_coordinates(boxes1, start_index=0, conversion='centroids2corners')
+        boxes2 = convert_coordinates(boxes2, start_index=0, conversion='centroids2corners')
+        coords = 'corners'
+
+    intersection_areas = intersection_area_(boxes1, boxes2)
+
+    m = boxes1.shape[0]
+    n = boxes2.shape[0]
+
+    xmin = 0
+    ymin = 1
+    xmax = 2
+    ymax = 3
+
+    boxes1_areas = tf.tile(tf.expand_dims((boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin]), 1), (1, n))
+    boxes2_areas = tf.tile(tf.expand_dims((boxes2[:, xmax] - boxes2[:, xmin]) * (boxes2[:, ymax] - boxes2[:, ymin]), 0), (m, 1))
+
+    union_areas = boxes1_areas + boxes2_areas - intersection_areas
+
+    return intersection_areas / union_areas
+
+
+def match_bipartite_greedy(weight_matrix):
+
+    num_gt_boxes = weight_matrix.shape[0]
+    all_gt_indices = list(range(num_gt_boxes))
+
+    matches = tf.zeros(num_gt_boxes)
+
+    for _ in range(num_gt_boxes):
+
+        anchor_indices = tf.argmax(weight_matrix, axis=1)
+        overlaps = weight_matrix(all_gt_indices, anchor_indices)
+        ground_truth_index = tf.argmax(overlaps)
+        anchor_index = anchor_indices[ground_truth_index]
+        matches[ground_truth_index] = anchor_index
+
+        weight_matrix[ground_truth_index] = 0
+        weight_matrix[:, anchor_index] = 0
+
+    return matches
+
+
 def encode_ssd(gt_labels, *args):
     
     n_classes = args[1]
@@ -79,8 +146,24 @@ def encode_ssd(gt_labels, *args):
         classes_one_hot = class_vectors[labels[:, class_id]]
         labels_one_hot = tf.concatenate([classes_one_hot, labels[:, [xmin, ymin, xmax, ymax]]], -1)
 
-        similarities = 
+        similarities = iou(labels[:,[xmin, ymin, xmax, ymax]], y_encoded[i,:,-12:-8])
 
+        bipartite_matches = match_bipartite_greedy(weight_matrix=similarities)
+
+        y_encoded[i, bipartite_matches, :-8] = labels_one_hot
+
+        similarities[:, bipartite_matches] = 0
+
+        max_background_similiarites = tf.amax(similarities, 0)
+        neutral_boxes = tf.nonzero(max_background_similiarites >= neg_iou_limit)[0]
+        y_encoded[i, neutral_boxes, 0] = 0
+
+        y_encoded[:,:,-12:-8] -= y_encoded[:,:,-8:-4]
+        y_encoded[:,:,[-12,-10]] /= tf.expand_dims(y_encoded[:,:,-6] - y_encoded[:,:,-8], axis=-1) # (xmin(gt) - xmin(anchor)) / w(anchor), (xmax(gt) - xmax(anchor)) / w(anchor)
+        y_encoded[:,:,[-11,-9]] /= tf.expand_dims(y_encoded[:,:,-5] - y_encoded[:,:,-7], axis=-1) # (ymin(gt) - ymin(anchor)) / h(anchor), (ymax(gt) - ymax(anchor)) / h(anchor)
+        y_encoded[:,:,-12:-8] /= y_encoded[:,:,-4:] # (gt - anchor) / size(anchor) / variance for all four coordinates, where 'size' refers to w and h respectively
+
+        return y_encoded
 
 
 
@@ -125,6 +208,8 @@ def generate_anchor_boxes_for_layer(
     coords='centroids',
     normalize_coords=True):
 
+    # Figure out image dimension ordering.
+    img_width, img_height = img_size
     size = min(img_size[0], img_size[1])
     boxes = []
 
