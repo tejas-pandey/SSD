@@ -55,7 +55,6 @@ def convert_coordinates(tensor, start_index, conversion, border_pixels='half'):
     return tensor1
 
 
-<<<<<<< HEAD
 def intersection_area_(boxes1, boxes2, coords='corners', mode='outer_product', border_pixels='half'):
     m = boxes1.shape[0]
     n = boxes2.shape[1]
@@ -77,26 +76,11 @@ def intersection_area_(boxes1, boxes2, coords='corners', mode='outer_product', b
 
 
 def iou(boxes1, boxes2, coords='centroids', mode='outer_product', border_pixels='half'):
-=======
-def intersecion_area(boxes1, boxes2):
-    m = boxes1.shape[0]
-    n = boxes2.shape[0]
-
-    xmin = 0
-    ymin = 1
-    xmax  =2
-    ymax = 3
-
-    min_xy = 
-
-def iou(boxes1, boxes2, coords='centroids', mode='outer_product'):
->>>>>>> 9b4197c21069c222fb988fbdf685e6927689f684
 
     if coords == 'centroids':
         boxes1 = convert_coordinates(boxes1, start_index=0, conversion='centroids2corners')
         boxes2 = convert_coordinates(boxes2, start_index=0, conversion='centroids2corners')
         coords = 'corners'
-<<<<<<< HEAD
 
     intersection_areas = intersection_area_(boxes1, boxes2)
 
@@ -136,10 +120,6 @@ def match_bipartite_greedy(weight_matrix):
 
     return matches
 
-=======
-    
-    
->>>>>>> 9b4197c21069c222fb988fbdf685e6927689f684
 
 def encode_ssd(gt_labels, *args):
     
