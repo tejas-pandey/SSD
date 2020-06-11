@@ -19,9 +19,6 @@ def create_dataset_list(json_file):
         img_data = coco.loadImgs(img_id)[0]
         ann_id = coco.getAnnIds(img_id)
         anns = coco.loadAnns(ann_id)
-        print(anns)
-
-        exit(0)
 
         for ann in anns:
             image_list.append(os.path.abspath(os.path.join("val2017", img_data['file_name'])))
@@ -51,8 +48,19 @@ def create_tf_dataset(image_list, label_list, annotation_list):
     image_dataset = image_dataset.map(image_preprocessing, _THREADS)
     annotation_dataset = annotation_dataset.map(annotation_preprocessing, _THREADS)
 
-    for ann in annotation_dataset.take(10):
-        print(ann)
+    #for ann in annotation_dataset.take(10):
+    #    print(ann)
+
+    train_dataset = tf.data.Dataset.zip((image_dataset, label_dataset, annotation))
+
+    train_dataset = train_dataset.batch(32)
+    train_dataset = train_dataset.prefetch(10)
+    train_dataset = train_dataset.repeat()
+    train_dataset = train_dataset.shuffle()
+
+    # model.fit(train_dataset)
+    # for d in train_dataset:
+
 
 
 if __name__ == "__main__":

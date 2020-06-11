@@ -25,7 +25,7 @@ def LeNet():
        
 
     # BASE MODEL.
-    model = tf.keras.models.Model()
+#    model = tf.keras.models.Sequential()
 
     conv1 = Conv2D(16, 5, padding='same', activation='relu', input_shape=(None, None, 3))
     conv1 = MaxPool2D()(conv1)
@@ -45,6 +45,13 @@ def LeNet():
     conv6 = Conv2D(128, 5, padding='same', activation='relu')(conv5)
     conv6 = MaxPool2D()(conv6)
 
+
+    model = tf.keras.models.Model(inputs=conv1, outputs=conv6)
+    model.compile(loss=tf.losses.CrossEntropyLoss(), optimizer=tf.optimizers.SGD())
+    model.fit(dataset, epochs=2)
+
+    
+    sgd = tf.optimizers.SGD()
     # Build the convolutional predictor layers on top of conv layers 4, 5, 6.
     # We build two predictor layers on top of each of these layers: One for class prediction (classification), one for box coordinate prediction (localization)
     # We predict `n_classes` confidence values for each box, hence the `classes` predictors have depth `n_boxes * n_classes`
@@ -70,5 +77,4 @@ def LeNet():
     classes5_flattened = tf.reshape(classes4, [-1, n_classes])(classes5)
     classes6_flattened = tf.reshape(classes4, [-1, n_classes])(classes6)
 
-    
     

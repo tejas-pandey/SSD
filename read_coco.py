@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     img_ids = coco.getImgIds()
 
-    for imd_id in img_ids:
+    for imd_id in img_ids[2:]:
         img_data = coco.loadImgs(imd_id)
         ann_id = coco.getAnnIds(imd_id)
         anns = coco.loadAnns(ann_id)
@@ -58,6 +58,11 @@ if __name__ == '__main__':
         # img = Image.open(img_full_path)
         draw_bounding_box(img, ann['bbox'], ann['category_id'], labels)
     
-    plt.imshow(img)
-    plt.show()
+    # plt.imshow(img)
+    # plt.show()
+
+    print(img_full_path)
+    for ann in anns:
+        print(ann['bbox'])
+        print(ann['category_id'])
 
